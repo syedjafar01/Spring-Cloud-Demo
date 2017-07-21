@@ -13,7 +13,6 @@
         <groupId>org.springframework.cloud</groupId>
         <artifactId>spring-cloud-starter-parent</artifactId>
         <version>Camden.SR7</version>
-        <!--<type>pom</type>-->
     </parent>
 
     <properties>
