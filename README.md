@@ -1,6 +1,6 @@
 # Spring-Cloud-Demo
 
-This Project demonstrate how an ApplicationClient service will call ApplicationServer -service which has 2 instances
+This Project demonstrate how an `ApplicationClient` service will call `ApplicationServer` -service which has 2 instances
 running on different ports and are registered on SpringEureka server (discovery-server).
 
 *Pre-Requisites*
@@ -19,9 +19,9 @@ In order to make use of this project, Follow the Steps:
 
        mvn clean install
 
-3) Open discovery-service module and run DiscoveryServiceApplication class
+3) Open discovery-service module and run `DiscoveryServiceApplication` class
 
-4) Open application-server module and run 2 instances of ServiceApplication class
+4) Open application-server module and run 2 instances of `ServiceApplication` class
 
    In order to run 2 instances, Follow thw steps:
 
@@ -45,16 +45,16 @@ In order to make use of this project, Follow the Steps:
        
    Click apply and run 
    
-5) Open application-client module and run ClientApplication class
+5) Open application-client module and run `ClientApplication` class
 
 6) Go to browser and type
 
         localhost:8761
         
-   This will open the spring Eureka ui portal where u can see the registered Application services.
+   This will open the `spring Eureka` ui portal where u can see the registered Application services.
    
 7) Open another window and type
 
         localhost:8080  
 
-   When u refresh the page, the output changes depending on which instance is responding. This all will be managed by spring Eureka server.
+   When u refresh the page, the output changes depending on which instance of `ServiceApplication` is responding. This all will be managed by spring Eureka server.
