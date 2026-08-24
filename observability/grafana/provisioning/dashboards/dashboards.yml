@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Spring Cloud Reference
+    orgId: 1
+    folder: Spring Cloud Reference
+    type: file
+    disableDeletion: true
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
