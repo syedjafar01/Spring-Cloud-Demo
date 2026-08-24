@@ -11,8 +11,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>application-server</artifactId>
-    <name>application-server</name>
+    <artifactId>greeting-service</artifactId>
+    <name>greeting-service</name>
 
     <dependencies>
         <dependency>
