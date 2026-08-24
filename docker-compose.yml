@@ -8,12 +8,12 @@ services:
     ports:
       - "8761:8761"
 
-  service-1:
+  greeting-service-1:
     build:
       context: .
       args:
         MODULE: greeting-service
-    container_name: service-1
+    container_name: greeting-service-1
     ports:
       - "8081:8081"
     environment:
@@ -23,12 +23,12 @@ services:
     depends_on:
       - discovery-server
 
-  service-2:
+  greeting-service-2:
     build:
       context: .
       args:
         MODULE: greeting-service
-    container_name: service-2
+    container_name: greeting-service-2
     ports:
       - "8082:8082"
     environment:
@@ -51,8 +51,8 @@ services:
       EUREKA_SERVER_URL: http://discovery-server:8761/eureka
     depends_on:
       - discovery-server
-      - service-1
-      - service-2
+      - greeting-service-1
+      - greeting-service-2
 
   gateway:
     build:
@@ -67,5 +67,5 @@ services:
       EUREKA_SERVER_URL: http://discovery-server:8761/eureka
     depends_on:
       - discovery-server
-      - service-1
-      - service-2
+      - greeting-service-1
+      - greeting-service-2

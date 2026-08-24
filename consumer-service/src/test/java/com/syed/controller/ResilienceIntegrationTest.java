@@ -17,7 +17,7 @@ import java.io.IOException;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(properties = {
-        "resilience4j.circuitbreaker.instances.service.wait-duration-in-open-state=1s"
+        "resilience4j.circuitbreaker.instances.greeting-service.wait-duration-in-open-state=1s"
 })
 class ResilienceIntegrationTest {
 
@@ -47,7 +47,7 @@ class ResilienceIntegrationTest {
     @DynamicPropertySource
     static void serviceInstance(DynamicPropertyRegistry registry) {
         registry.add("eureka.client.enabled", () -> false);
-        registry.add("spring.cloud.discovery.client.simple.instances.service[0].uri",
+        registry.add("spring.cloud.discovery.client.simple.instances.greeting-service[0].uri",
                 () -> unavailableService.url("/").toString());
     }
 
@@ -58,7 +58,7 @@ class ResilienceIntegrationTest {
                     .isEqualTo("Service temporarily unavailable");
         }
 
-        CircuitBreaker circuitBreaker = circuitBreakerRegistry.circuitBreaker("service");
+        CircuitBreaker circuitBreaker = circuitBreakerRegistry.circuitBreaker("greeting-service");
 
         assertThat(circuitBreaker.getState())
                 .isEqualTo(CircuitBreaker.State.OPEN);
