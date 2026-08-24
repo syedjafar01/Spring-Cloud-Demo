@@ -20,8 +20,10 @@ services:
       SERVER_PORT: 8081
       SERVICE_INSTANCE_NAME: instance-1
       EUREKA_SERVER_URL: http://discovery-server:8761/eureka
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       - discovery-server
+      - tempo
 
   greeting-service-2:
     build:
@@ -35,8 +37,10 @@ services:
       SERVER_PORT: 8082
       SERVICE_INSTANCE_NAME: instance-2
       EUREKA_SERVER_URL: http://discovery-server:8761/eureka
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       - discovery-server
+      - tempo
 
   consumer:
     build:
@@ -49,10 +53,12 @@ services:
     environment:
       SERVER_PORT: 8083
       EUREKA_SERVER_URL: http://discovery-server:8761/eureka
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       - discovery-server
       - greeting-service-1
       - greeting-service-2
+      - tempo
 
   gateway:
     build:
@@ -65,10 +71,12 @@ services:
     environment:
       SERVER_PORT: 8080
       EUREKA_SERVER_URL: http://discovery-server:8761/eureka
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       - discovery-server
       - greeting-service-1
       - greeting-service-2
+      - tempo
 
   prometheus:
     image: prom/prometheus:v3.5.0
@@ -83,6 +91,18 @@ services:
       - greeting-service-1
       - greeting-service-2
 
+  tempo:
+    image: grafana/tempo:3.0.2
+    container_name: tempo
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+
   grafana:
     image: grafana/grafana:12.1.1
     container_name: grafana
@@ -92,3 +112,7 @@ services:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
       - prometheus
+      - tempo
+
+volumes:
+  tempo-data:
