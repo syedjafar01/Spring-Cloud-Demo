@@ -1,20 +1,19 @@
 package com.syed.controller;
 
-import com.netflix.discovery.EurekaClient;
-import com.netflix.appinfo.InstanceInfo;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class CallingServiceTest {
 
     @Test
-    void shouldCreateClientController() {
-        CallingService service = new CallingService();
+    void shouldCreateClientControllerWithInjectedRestClient() {
+        RestClient restClient = mock(RestClient.class);
+
+        CallingService service = new CallingService(restClient);
+
         assertThat(service).isNotNull();
     }
 }
