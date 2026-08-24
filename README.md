@@ -6,9 +6,7 @@
 [![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-Cloud--Native-6DB33F?style=flat-square&logo=spring&logoColor=white)](https://spring.io/projects/spring-cloud)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 
-A hands-on Spring Cloud reference architecture demonstrating **service discovery, API gateway routing, client-side load balancing, resilient service-to-service communication, integration testing, and containerized development**.
-
-The repository evolved from an older Spring Cloud demonstration into a modern Java 17 / Spring Boot 3 based reference project. The goal is to demonstrate the engineering trade-offs behind common microservice patterns rather than simply collect framework annotations.
+A hands-on Spring Cloud reference architecture demonstrating **service discovery, API gateway routing, client-side load balancing, resilient service-to-service communication, integration testing, containerized development, and metrics-driven observability**.
 
 ## Architecture
 
@@ -43,20 +41,11 @@ The repository evolved from an older Spring Cloud demonstration into a modern Ja
                               │consumer-service│
                               │     :8083      │
                               └────────────────┘
-```
 
-### Request paths
-
-**External request:**
-
-```text
-Client → Gateway → Eureka/LoadBalancer → greeting-service instance
-```
-
-**Service-to-service request:**
-
-```text
-consumer-service → Eureka/LoadBalancer → greeting-service
+                 ┌──────────────────────────────┐
+                 │ Prometheus :9090 → Grafana   │
+                 │            :3000             │
+                 └──────────────────────────────┘
 ```
 
 ## Modules
@@ -67,6 +56,8 @@ consumer-service → Eureka/LoadBalancer → greeting-service
 | `gateway-service` | 8080 | External API entry point and routing |
 | `greeting-service` | 8081 / 8082 | Discoverable service with multiple instances |
 | `consumer-service` | 8083 | Service-to-service client with resilience policies |
+| Prometheus | 9090 | Metrics collection and querying |
+| Grafana | 3000 | Metrics visualization |
 
 ## Key capabilities
 
@@ -78,10 +69,12 @@ consumer-service → Eureka/LoadBalancer → greeting-service
 - **Circuit breaker** with Resilience4j
 - **Fallback** when the downstream service is unavailable
 - **Actuator** health and operational endpoints
-- **Integration tests** for discovery/load-balancing behavior
+- **Micrometer / Prometheus metrics** from gateway, consumer, and greeting services
+- **Grafana** provisioned with Prometheus as its default datasource
+- **Integration tests** for load-balancing behavior
 - **Automated resilience tests** covering retry, circuit opening, and fallback
 - **Docker Compose** environment for reproducible local execution
-- **GitHub Actions CI** running the complete Maven verification suite
+- **GitHub Actions CI** running Maven verification and Docker image builds
 
 ## Technology Stack
 
@@ -94,11 +87,12 @@ consumer-service → Eureka/LoadBalancer → greeting-service
 | Gateway | Spring Cloud Gateway |
 | Load balancing | Spring Cloud LoadBalancer |
 | Resilience | Resilience4j |
+| Metrics | Micrometer + Prometheus |
+| Dashboards | Grafana |
 | Build | Maven |
 | Testing | JUnit 5, Spring Boot Test, MockWebServer |
 | Runtime | Docker / Docker Compose |
 | CI | GitHub Actions |
-| Observability | Spring Boot Actuator |
 
 ## Quick Start
 
@@ -114,8 +108,6 @@ consumer-service → Eureka/LoadBalancer → greeting-service
 mvn clean verify
 ```
 
-The verification suite includes unit/integration tests for service communication, load balancing, and resilience behavior.
-
 ### Start the complete environment
 
 ```bash
@@ -128,76 +120,115 @@ Check the containers:
 docker compose ps
 ```
 
-### Verify Eureka
+### Verify the services
 
-Open:
+Eureka:
 
 ```text
 http://localhost:8761
 ```
 
-### Verify the service instances directly
+Greeting instances:
 
 ```bash
 curl http://localhost:8081/
 curl http://localhost:8082/
 ```
 
-Expected responses:
-
-```text
-Hello from instance-1
-Hello from instance-2
-```
-
-### Verify Gateway load balancing
+Gateway:
 
 ```bash
 curl http://localhost:8080/service
 ```
 
-Run it several times and you should see responses from both service instances:
-
-```text
-Hello from instance-1
-Hello from instance-2
-Hello from instance-1
-...
-```
-
-The sequence is not required to alternate perfectly; both registered instances should receive traffic.
-
-### Verify consumer-service
+Consumer service:
 
 ```bash
 curl http://localhost:8083/
 ```
 
-This exercises service-to-service discovery from `consumer-service` to `greeting-service`.
+## Observability
+
+The application services expose Prometheus-compatible metrics through Spring Boot Actuator:
+
+```text
+http://localhost:8080/actuator/prometheus
+http://localhost:8083/actuator/prometheus
+http://localhost:8081/actuator/prometheus
+http://localhost:8082/actuator/prometheus
+```
+
+Prometheus scrapes all four application instances using the Docker service names configured in:
+
+```text
+observability/prometheus/prometheus.yml
+```
+
+Open Prometheus:
+
+```text
+http://localhost:9090
+```
+
+Open Grafana:
+
+```text
+http://localhost:3000
+```
+
+Grafana is automatically provisioned with Prometheus as its default datasource. This gives the project a real metrics pipeline:
+
+```text
+Spring Boot
+    ↓
+Micrometer
+    ↓
+Actuator /actuator/prometheus
+    ↓
+Prometheus
+    ↓
+Grafana
+```
+
+Useful first queries in Prometheus/Grafana include:
+
+```text
+http_server_requests_seconds_count
+jvm_memory_used_bytes
+process_cpu_usage
+system_cpu_usage
+```
+
+## Load Balancing Demonstration
+
+Run the Gateway request several times:
+
+```bash
+for i in {1..10}; do
+  curl -s http://localhost:8080/service
+  echo
+done
+```
+
+You should see responses from both greeting-service instances. The sequence does not need to alternate perfectly; the important behavior is that both registered instances can receive traffic.
 
 ## Resilience Demonstration
 
 The consumer service uses Resilience4j Retry and Circuit Breaker around the downstream greeting-service call.
 
-A failure follows this path:
-
 ```text
-             downstream failure
-                     │
-                     ▼
-                   Retry
-                     │
-                     ▼
-              Circuit Breaker
-                     │
-                     ▼
-                  Fallback
-                     │
-                     ▼
-        Service temporarily unavailable
+downstream failure
+       ↓
+     Retry
+       ↓
+Circuit Breaker
+       ↓
+    Fallback
+       ↓
+Service temporarily unavailable
 ```
 
-To reproduce the failure scenario with Docker:
+With both greeting instances stopped:
 
 ```bash
 docker compose stop greeting-service-1 greeting-service-2
@@ -210,7 +241,7 @@ Expected fallback:
 Service temporarily unavailable
 ```
 
-Restart the services with:
+Restart them with:
 
 ```bash
 docker compose start greeting-service-1 greeting-service-2
@@ -218,72 +249,76 @@ docker compose start greeting-service-1 greeting-service-2
 
 ## Automated Tests
 
-The project contains tests for the important distributed-system behaviors.
+`LoadBalancingIntegrationTest` verifies that calls can reach two independently running test service instances.
 
-### Load balancing
-
-`LoadBalancingIntegrationTest` registers two test service instances and verifies that calls reach both instances.
-
-### Resilience
-
-`ResilienceIntegrationTest` uses a controlled failing downstream service to verify:
+`ResilienceIntegrationTest` verifies that:
 
 1. downstream `503` responses are retried;
 2. the circuit breaker opens after the configured failure threshold;
 3. the fallback response is returned;
-4. subsequent calls are rejected by the open circuit without another downstream request.
+4. subsequent calls do not reach the failed downstream service while the circuit is open.
 
-This keeps the resilience behavior testable without requiring Docker or a real Eureka server during the Maven test run.
+These tests run as part of:
+
+```bash
+mvn clean verify
+```
 
 ## CI/CD
 
 GitHub Actions runs on pushes to `master` and pull requests targeting `master`.
 
-The current quality gate is:
-
 ```text
-Checkout
-   ↓
-Java 17 / Temurin
-   ↓
-Maven dependency cache
-   ↓
-mvn clean verify
-   ↓
-Unit + integration + resilience tests
+                 GitHub Actions
+                       │
+          ┌────────────┴────────────┐
+          ▼                         ▼
+    Maven verify              Docker builds
+          │                         │
+   Java 17 + tests          4 service images
+          │                         │
+          └────────────┬────────────┘
+                       ▼
+                    Quality Gate
 ```
 
-A change is not considered healthy unless the Maven verification suite passes.
+The Docker matrix validates:
+
+```text
+discovery-service
+greeting-service
+consumer-service
+gateway-service
+```
 
 ## Engineering Patterns Demonstrated
 
-This project intentionally focuses on practical distributed-system concerns:
+- Service discovery decoupling consumers from instance locations
+- Gateway routing as a single external entry point
+- Client-side load balancing across service instances
+- Bounded retries for transient failures
+- Circuit breakers for controlled degradation
+- Fallback behavior for unavailable dependencies
+- Integration testing without requiring a full Docker environment
+- Metrics collection and visualization for distributed services
+- Reproducible local infrastructure with Docker Compose
+- CI quality gates for builds, tests, and container images
 
-- Why service discovery decouples consumers from instance locations
-- Why multiple instances improve availability and capacity
-- Where gateway routing and client-side load balancing fit
-- Why retries need bounded attempts and appropriate retryable exceptions
-- How circuit breakers prevent repeatedly calling an unhealthy dependency
-- How fallbacks provide controlled degradation
-- How integration tests can validate distributed behavior without requiring a full environment
-- How containerization makes the complete topology reproducible
-- How CI catches compilation, dependency, and test regressions
+## Roadmap
 
-## Project Roadmap
-
-- [x] Modernize Java / Spring baseline
+- [x] Java 17 / Spring Boot 3 modernization
 - [x] Eureka service discovery
 - [x] Multiple service instances
 - [x] Client-side load balancing
 - [x] Spring Cloud Gateway
 - [x] Resilience4j retry and circuit breaker
-- [x] Fallback handling
 - [x] Integration and resilience tests
 - [x] Docker Compose environment
 - [x] GitHub Actions CI
+- [x] Prometheus metrics
+- [x] Grafana metrics visualization foundation
 - [ ] Gateway integration tests
-- [ ] Distributed tracing
-- [ ] Prometheus / Grafana observability stack
+- [ ] Distributed tracing with OpenTelemetry
 - [ ] Centralized structured logging
 - [ ] Architecture decision records
 - [ ] Kubernetes deployment examples
@@ -291,21 +326,12 @@ This project intentionally focuses on practical distributed-system concerns:
 ## Useful Commands
 
 ```bash
-# Build and test
 mvn clean verify
-
-# Start everything
- docker compose up --build -d
-
-# Stop everything
- docker compose down
-
-# View logs
- docker compose logs -f gateway
- docker compose logs -f consumer
-
-# Check running containers
- docker compose ps
+docker compose up --build -d
+docker compose down
+docker compose logs -f gateway
+docker compose logs -f consumer
+docker compose ps
 ```
 
 ## Author
