@@ -45,6 +45,22 @@ services:
         MODULE: application-client
     container_name: application-client
     ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: 8083
+      EUREKA_SERVER_URL: http://discovery-server:8761/eureka
+    depends_on:
+      - discovery-server
+      - service-1
+      - service-2
+
+  gateway:
+    build:
+      context: .
+      args:
+        MODULE: gateway-service
+    container_name: gateway-service
+    ports:
       - "8080:8080"
     environment:
       SERVER_PORT: 8080
