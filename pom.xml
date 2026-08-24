@@ -32,8 +32,8 @@
     </dependencyManagement>
     <modules>
         <module>discovery-service</module>
-        <module>application-server</module>
-        <module>application-client</module>
+        <module>greeting-service</module>
+        <module>consumer-service</module>
         <module>gateway-service</module>
     </modules>
     <build>
