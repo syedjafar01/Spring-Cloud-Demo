@@ -7,11 +7,6 @@ services:
     container_name: discovery-server
     ports:
       - "8761:8761"
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health | grep -q 'UP'"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
 
   service-1:
     build:
@@ -24,8 +19,7 @@ services:
       SERVICE_INSTANCE_NAME: instance-1
       EUREKA_SERVER_URL: http://discovery-server:8761/eureka
     depends_on:
-      discovery-server:
-        condition: service_healthy
+      - discovery-server
 
   service-2:
     build:
@@ -38,8 +32,7 @@ services:
       SERVICE_INSTANCE_NAME: instance-2
       EUREKA_SERVER_URL: http://discovery-server:8761/eureka
     depends_on:
-      discovery-server:
-        condition: service_healthy
+      - discovery-server
 
   client:
     build:
@@ -53,9 +46,6 @@ services:
       SERVER_PORT: 8080
       EUREKA_SERVER_URL: http://discovery-server:8761/eureka
     depends_on:
-      discovery-server:
-        condition: service_healthy
-      service-1:
-        condition: service_started
-      service-2:
-        condition: service_started
+      - discovery-server
+      - service-1
+      - service-2
