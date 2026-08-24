@@ -20,7 +20,7 @@
       "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [{"expr": "sum(rate(http_server_requests_seconds_count{job=~\"gateway-service|consumer-service|greeting-service\",status=~\"5..\"}[1m]))", "legendFormat": "5xx/sec", "refId": "A"}],
-      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+      "fieldConfig": {"defaults": {"unit": "reqps", "noValue": "0 req/s"}, "overrides": []},
       "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto", "textMode": "auto"}
     },
     {
@@ -65,10 +65,10 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["spring-boot", "spring-cloud", "microservices"],
+  "tags": ["spring-boot", "spring-cloud", "microservices", "observability"],
   "templating": {"list": []},
   "time": {"from": "now-15m", "to": "now"},
   "title": "Spring Cloud Microservices Overview",
   "uid": "spring-cloud-overview",
-  "version": 1
+  "version": 2
 }
