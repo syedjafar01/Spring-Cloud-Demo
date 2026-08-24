@@ -47,9 +47,9 @@ class LoadBalancingIntegrationTest {
     @DynamicPropertySource
     static void serviceInstances(DynamicPropertyRegistry registry) {
         registry.add("eureka.client.enabled", () -> false);
-        registry.add("spring.cloud.discovery.client.simple.instances.service[0].uri",
+        registry.add("spring.cloud.discovery.client.simple.instances.greeting-service[0].uri",
                 () -> instance1.url("/").toString());
-        registry.add("spring.cloud.discovery.client.simple.instances.service[1].uri",
+        registry.add("spring.cloud.discovery.client.simple.instances.greeting-service[1].uri",
                 () -> instance2.url("/").toString());
     }
 
