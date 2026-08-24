@@ -1,153 +1,136 @@
 # Spring Cloud Microservices Reference
 
-> A compact reference implementation for service discovery, client-side load balancing, and containerized Spring microservices.
+> A learning project demonstrating service discovery, client-side load balancing, and resilient communication between Spring-based microservices.
 
+[![CI](https://github.com/syedjafar01/Spring-Cloud-Demo/actions/workflows/ci.yml/badge.svg)](https://github.com/syedjafar01/Spring-Cloud-Demo/actions/workflows/ci.yml)
 [![Java](https://img.shields.io/badge/Java-17%2B-ED8B00?style=flat-square&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F?style=flat-square&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-2025.0-6DB33F?style=flat-square&logo=spring&logoColor=white)](https://spring.io/projects/spring-cloud)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=flat-square&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-Cloud--Native-6DB33F?style=flat-square&logo=spring&logoColor=white)](https://spring.io/projects/spring-cloud)
 [![Maven](https://img.shields.io/badge/Maven-Build-C71A36?style=flat-square&logo=apachemaven&logoColor=white)](https://maven.apache.org/)
 
 ## 🎯 Purpose
 
-This repository started as a 2017 Spring Cloud demonstration showing how an `application-client` communicates with multiple `application-server` instances registered through Eureka. The original implementation used Java 8 and the Spring Cloud Camden generation.
+This repository started as a 2017 Spring Cloud demonstration showing how an `application-client` communicates with multiple `application-server` instances registered through a Eureka discovery server. The original implementation used Java 8 and the Spring Cloud Camden generation.
 
-The codebase has now been **partially modernized** while preserving the original learning objective:
+The project is being **modernized as a production-oriented reference implementation** while preserving the original learning objective.
 
 ```text
                     ┌──────────────────────┐
-                    │   Application Client │
+                    │     Client / API     │
                     └──────────┬───────────┘
-                               │
-                         lb://service
                                │
                                ▼
                     ┌──────────────────────┐
-                    │    Eureka Server     │
-                    │   Service Registry   │
+                    │   Service Discovery  │
+                    │      / Registry      │
                     └──────────┬───────────┘
                                │
                     ┌──────────┴──────────┐
                     ▼                     ▼
           ┌─────────────────┐   ┌─────────────────┐
-          │ Service #1      │   │ Service #2      │
-          │ instance-1      │   │ instance-2      │
-          │ :8081           │   │ :8082           │
+          │ Server Instance │   │ Server Instance │
+          │       #1        │   │       #2        │
           └─────────────────┘   └─────────────────┘
 ```
 
 ## 🧩 Architecture Goals
 
 - Service discovery and registration
-- Multiple instances of the same service
-- Client-side load balancing through Spring Cloud LoadBalancer
+- Multiple instances of a service
+- Client-side load balancing
+- API gateway patterns
 - Health and operational endpoints
+- Resilient service-to-service communication
 - Containerized local development
-- Reproducible multi-module builds
-- Automated CI and integration tests
-- Resilience patterns as the next evolution
+- Automated build and test pipeline
+- Clear separation between infrastructure and application services
 
 ## 🛠️ Technology Stack
 
 | Area | Technology |
 |---|---|
-| Language | Java 17 |
-| Framework | Spring Boot 3.5.x |
-| Cloud | Spring Cloud 2025.0.x |
+| Language | Java 17+ |
+| Framework | Spring Boot 3.x |
+| Cloud | Spring Cloud |
 | Build | Maven |
-| Service Discovery | Netflix Eureka |
-| Client Load Balancing | Spring Cloud LoadBalancer |
-| HTTP Client | Spring `RestClient` |
-| Observability | Spring Boot Actuator |
+| Service Discovery | Eureka |
+| Gateway | Spring Cloud Gateway |
+| Resilience | Resilience4j |
+| Observability | Spring Boot Actuator + Micrometer |
 | Containers | Docker / Docker Compose |
 | Testing | JUnit 5 + Spring Boot Test |
-| CI | GitHub Actions (next step) |
+| CI | GitHub Actions |
 
-Spring Boot 3.5 requires Java 17 or newer, and Spring Cloud 2025.0.x is the compatible release train for Spring Boot 3.5.x. citeturn0search0turn0search2
-
-## 📁 Modules
+## 📁 Current Modules
 
 ```text
 Spring-Cloud-Demo/
-├── discovery-service/      # Eureka service registry
-├── application-server/     # Discoverable service
-├── application-client/     # Load-balanced client
-├── Dockerfile              # Reusable multi-module image build
-├── docker-compose.yml      # Complete local environment
+├── discovery-service/      # Service registry
+├── application-server/     # Discoverable service instances
+├── application-client/     # Client consuming the service
+├── docker-compose.yml      # Reproducible local environment
 └── pom.xml                 # Maven multi-module build
 ```
 
-## ▶️ Run Locally
+## 🚧 Modernization Roadmap
 
-### Maven
+- [x] Document original architecture and intent
+- [x] Upgrade Java baseline to Java 17+
+- [x] Upgrade Spring Boot / Spring Cloud dependencies
+- [x] Remove legacy duplicate dependencies
+- [x] Replace IDE-specific run instructions with reproducible commands
+- [x] Add Docker Compose for the complete environment
+- [x] Add GitHub Actions CI
+- [ ] Add Spring Cloud Gateway
+- [ ] Add Resilience4j retry / circuit-breaker examples
+- [ ] Add Actuator health and metrics endpoints
+- [ ] Add integration tests
+- [ ] Add architecture and sequence diagrams
+- [ ] Add local observability with Prometheus / Grafana
+
+## 🧪 CI Pipeline
+
+Every push to `master` and every pull request targeting `master` runs the Maven verification pipeline.
+
+The workflow:
+
+1. Checks out the source
+2. Installs Java 17 using Eclipse Temurin
+3. Restores Maven dependencies from the GitHub Actions cache
+4. Runs `mvn clean verify`
+
+The Maven dependency cache is provided by `actions/setup-java`, which supports built-in Maven dependency caching. citeturn0search0turn0search5
+
+## ▶️ Local Development
 
 ```bash
+# Clone
+git clone https://github.com/syedjafar01/Spring-Cloud-Demo.git
+cd Spring-Cloud-Demo
+
+# Build
 mvn clean verify
-```
 
-### Docker Compose
-
-```bash
+# Start the complete environment
 docker compose up --build
 ```
 
-Then open:
+## 📚 Engineering Topics Demonstrated
 
-- Client: `http://localhost:8080`
-- Eureka: `http://localhost:8761`
-- Service instance 1: `http://localhost:8081`
-- Service instance 2: `http://localhost:8082`
-
-Refreshing the client endpoint demonstrates requests being resolved through the service name `service` and distributed across registered instances.
-
-## 🔄 What Changed From the 2017 Version
-
-The original project used Spring Boot 1.5.3, Spring Cloud Camden, Java 8, and the legacy Netflix Eureka client API. fileciteturn9file0
-
-The modernized implementation now uses:
-
-- Java 17
-- Spring Boot 3.5.x
-- Spring Cloud 2025.0.x
-- `spring-cloud-starter-netflix-eureka-client`
-- Spring Cloud LoadBalancer
-- Spring `RestClient`
-- Constructor-based dependency injection
-- Externalized service instance configuration
-- Docker Compose deployment
-- Actuator health/info endpoints
-
-The client no longer calls Eureka directly to select an instance. Instead, it calls `http://service/` through a load-balanced `RestClient`, allowing the Spring Cloud load-balancing layer to resolve service instances.
-
-## 🚧 Next Engineering Milestones
-
-- [x] Upgrade Java baseline to Java 17
-- [x] Upgrade Spring Boot / Spring Cloud dependencies
-- [x] Remove legacy duplicate dependencies
-- [x] Replace IDE-specific service configuration with environment variables
-- [x] Add Docker Compose for the complete environment
-- [x] Add Actuator endpoints
-- [ ] Add integration tests with Testcontainers
-- [ ] Add GitHub Actions CI
-- [ ] Add Resilience4j retry / circuit-breaker examples
-- [ ] Add Spring Cloud Gateway as an optional edge service
-- [ ] Add Prometheus / Grafana observability
-- [ ] Add architecture and sequence diagrams
-
-## 🧠 Engineering Topics
-
-This project is intentionally focused on the reasoning behind distributed-system patterns:
+This project is intentionally focused on **why** distributed systems need these patterns rather than simply showing annotations:
 
 - How service discovery decouples service locations from clients
-- How client-side load balancing works with multiple instances
-- Why direct service-to-service calls should use logical service names
+- How multiple service instances improve availability and capacity
+- Where client-side versus gateway-side load balancing belongs
 - How retries can amplify failures when used incorrectly
 - When circuit breakers are useful
-- How health endpoints differ from application readiness
-- How containerization makes distributed-system demos reproducible
+- How health checks differ from business-level readiness
+- How observability helps diagnose distributed requests
+- How CI prevents dependency or compilation regressions from reaching the main branch
 
 ## 🔭 Future Direction
 
-The goal is to evolve this repository into a compact **microservices reference architecture** for experimenting with service discovery, gateway routing, resilience, observability, testing, and cloud-native deployment.
+The next version will evolve this repository from a historical Spring Cloud demo into a compact **microservices reference architecture** suitable for experimenting with system-design patterns, resilience, observability, and cloud-native deployment.
 
 ---
 
