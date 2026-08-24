@@ -12,7 +12,7 @@ services:
     build:
       context: .
       args:
-        MODULE: application-server
+        MODULE: greeting-service
     container_name: service-1
     ports:
       - "8081:8081"
@@ -27,7 +27,7 @@ services:
     build:
       context: .
       args:
-        MODULE: application-server
+        MODULE: greeting-service
     container_name: service-2
     ports:
       - "8082:8082"
@@ -38,12 +38,12 @@ services:
     depends_on:
       - discovery-server
 
-  client:
+  consumer:
     build:
       context: .
       args:
-        MODULE: application-client
-    container_name: application-client
+        MODULE: consumer-service
+    container_name: consumer-service
     ports:
       - "8083:8083"
     environment:

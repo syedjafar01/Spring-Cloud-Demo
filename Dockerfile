@@ -5,12 +5,12 @@ WORKDIR /workspace
 
 COPY pom.xml .
 COPY discovery-service/pom.xml discovery-service/pom.xml
-COPY application-server/pom.xml application-server/pom.xml
-COPY application-client/pom.xml application-client/pom.xml
+COPY greeting-service/pom.xml greeting-service/pom.xml
+COPY consumer-service/pom.xml consumer-service/pom.xml
 COPY gateway-service/pom.xml gateway-service/pom.xml
 COPY discovery-service/src discovery-service/src
-COPY application-server/src application-server/src
-COPY application-client/src application-client/src
+COPY greeting-service/src greeting-service/src
+COPY consumer-service/src consumer-service/src
 COPY gateway-service/src gateway-service/src
 
 RUN mvn -pl ${MODULE} -am clean package -DskipTests

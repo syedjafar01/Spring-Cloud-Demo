@@ -10,7 +10,7 @@
         <relativePath/>
     </parent>
     <groupId>com.syed</groupId>
-    <artifactId>spring-cloud-demo</artifactId>
+    <artifactId>Spring-Cloud-Microservices-Reference</artifactId>
     <version>2.0.0</version>
     <packaging>pom</packaging>
     <name>spring-cloud-microservices-reference</name>
@@ -32,8 +32,8 @@
     </dependencyManagement>
     <modules>
         <module>discovery-service</module>
-        <module>application-server</module>
-        <module>application-client</module>
+        <module>greeting-service</module>
+        <module>consumer-service</module>
         <module>gateway-service</module>
     </modules>
     <build>

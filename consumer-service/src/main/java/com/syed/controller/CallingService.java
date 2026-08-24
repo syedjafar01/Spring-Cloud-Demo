@@ -23,7 +23,7 @@ public class CallingService {
     @CircuitBreaker(name = SERVICE_NAME, fallbackMethod = "serviceFallback")
     public String callService() {
         return restClient.get()
-                .uri("http://service/")
+                .uri("http://greeting-service/")
                 .retrieve()
                 .body(String.class);
     }
