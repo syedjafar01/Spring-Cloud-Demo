@@ -63,12 +63,12 @@ class ResilienceIntegrationTest {
         assertThat(circuitBreaker.getState())
                 .isEqualTo(CircuitBreaker.State.OPEN);
 
-        int requestsBeforeOpen = unavailableService.getRequestCount().intValue();
+        int requestsBeforeOpen = unavailableService.getRequestCount();
 
         assertThat(callingService.callService())
                 .isEqualTo("Service temporarily unavailable");
 
-        assertThat(unavailableService.getRequestCount().intValue())
+        assertThat(unavailableService.getRequestCount())
                 .isEqualTo(requestsBeforeOpen);
     }
 }
