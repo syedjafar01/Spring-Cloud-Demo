@@ -10,9 +10,14 @@ datasources:
     jsonData:
       httpMethod: GET
       tracesToLogsV2:
-        datasourceUid: prometheus
-        spanStartTimeShift: "-5m"
-        spanEndTimeShift: "5m"
+        datasourceUid: loki
+        spanStartTimeShift: "-5s"
+        spanEndTimeShift: "5s"
+        tags:
+          - key: service.name
+            value: service_name
+        filterByTraceID: true
+        filterBySpanID: false
       tracesToMetrics:
         datasourceUid: prometheus
       serviceMap:
