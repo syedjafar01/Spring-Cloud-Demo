@@ -1,141 +1,315 @@
 # Spring Cloud Microservices Reference
 
-> A learning project demonstrating service discovery, client-side load balancing, and resilient communication between Spring-based microservices.
-
-[![CI](https://github.com/syedjafar01/Spring-Cloud-Demo/actions/workflows/ci.yml/badge.svg)](https://github.com/syedjafar01/Spring-Cloud-Demo/actions/workflows/ci.yml)
-[![Java](https://img.shields.io/badge/Java-17%2B-ED8B00?style=flat-square&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=flat-square&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![CI](https://github.com/syedjafar01/Spring-Cloud-Microservices-Reference/actions/workflows/ci.yml/badge.svg)](https://github.com/syedjafar01/Spring-Cloud-Microservices-Reference/actions/workflows/ci.yml)
+[![Java 17](https://img.shields.io/badge/Java-17-ED8B00?style=flat-square&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
+[![Spring Boot 3](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=flat-square&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-Cloud--Native-6DB33F?style=flat-square&logo=spring&logoColor=white)](https://spring.io/projects/spring-cloud)
-[![Maven](https://img.shields.io/badge/Maven-Build-C71A36?style=flat-square&logo=apachemaven&logoColor=white)](https://maven.apache.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 
-## 🎯 Purpose
+A hands-on Spring Cloud reference architecture demonstrating **service discovery, API gateway routing, client-side load balancing, resilient service-to-service communication, integration testing, and containerized development**.
 
-This repository started as a 2017 Spring Cloud demonstration showing how an `application-client` communicates with multiple `application-server` instances registered through a Eureka discovery server. The original implementation used Java 8 and the Spring Cloud Camden generation.
+The repository evolved from an older Spring Cloud demonstration into a modern Java 17 / Spring Boot 3 based reference project. The goal is to demonstrate the engineering trade-offs behind common microservice patterns rather than simply collect framework annotations.
 
-The project is being **modernized as a production-oriented reference implementation** while preserving the original learning objective.
+## Architecture
 
 ```text
-                    ┌──────────────────────┐
-                    │     Client / API     │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │   Service Discovery  │
-                    │      / Registry      │
-                    └──────────┬───────────┘
-                               │
-                    ┌──────────┴──────────┐
-                    ▼                     ▼
-          ┌─────────────────┐   ┌─────────────────┐
-          │ Server Instance │   │ Server Instance │
-          │       #1        │   │       #2        │
-          └─────────────────┘   └─────────────────┘
+                              ┌──────────────────┐
+                              │ External Client  │
+                              └────────┬─────────┘
+                                       │
+                                       ▼
+                              ┌──────────────────┐
+                              │ gateway-service  │
+                              │      :8080       │
+                              └────────┬─────────┘
+                                       │
+                                       ▼
+                              ┌──────────────────┐
+                              │discovery-service │
+                              │      :8761       │
+                              └────────┬─────────┘
+                                       │
+                         ┌─────────────┴─────────────┐
+                         ▼                           ▼
+                ┌──────────────────┐       ┌──────────────────┐
+                │ greeting-service │       │ greeting-service │
+                │    instance-1    │       │    instance-2    │
+                │      :8081       │       │      :8082       │
+                └─────────▲────────┘       └─────────▲────────┘
+                          │                           │
+                          └───────────┬───────────────┘
+                                      │
+                              ┌───────┴────────┐
+                              │consumer-service│
+                              │     :8083      │
+                              └────────────────┘
 ```
 
-## 🧩 Architecture Goals
+### Request paths
 
-- Service discovery and registration
-- Multiple instances of a service
-- Client-side load balancing
-- API gateway patterns
-- Health and operational endpoints
-- Resilient service-to-service communication
-- Containerized local development
-- Automated build and test pipeline
-- Clear separation between infrastructure and application services
+**External request:**
 
-## 🛠️ Technology Stack
+```text
+Client → Gateway → Eureka/LoadBalancer → greeting-service instance
+```
+
+**Service-to-service request:**
+
+```text
+consumer-service → Eureka/LoadBalancer → greeting-service
+```
+
+## Modules
+
+| Module | Port | Responsibility |
+|---|---:|---|
+| `discovery-service` | 8761 | Eureka service registry |
+| `gateway-service` | 8080 | External API entry point and routing |
+| `greeting-service` | 8081 / 8082 | Discoverable service with multiple instances |
+| `consumer-service` | 8083 | Service-to-service client with resilience policies |
+
+## Key capabilities
+
+- **Service discovery** with Netflix Eureka
+- **API Gateway** with Spring Cloud Gateway
+- **Client-side load balancing** with Spring Cloud LoadBalancer
+- **Multiple service instances** for the same logical service
+- **Retry** for transient downstream failures
+- **Circuit breaker** with Resilience4j
+- **Fallback** when the downstream service is unavailable
+- **Actuator** health and operational endpoints
+- **Integration tests** for discovery/load-balancing behavior
+- **Automated resilience tests** covering retry, circuit opening, and fallback
+- **Docker Compose** environment for reproducible local execution
+- **GitHub Actions CI** running the complete Maven verification suite
+
+## Technology Stack
 
 | Area | Technology |
 |---|---|
-| Language | Java 17+ |
+| Language | Java 17 |
 | Framework | Spring Boot 3.x |
 | Cloud | Spring Cloud |
-| Build | Maven |
-| Service Discovery | Eureka |
+| Discovery | Netflix Eureka |
 | Gateway | Spring Cloud Gateway |
+| Load balancing | Spring Cloud LoadBalancer |
 | Resilience | Resilience4j |
-| Observability | Spring Boot Actuator + Micrometer |
-| Containers | Docker / Docker Compose |
-| Testing | JUnit 5 + Spring Boot Test |
+| Build | Maven |
+| Testing | JUnit 5, Spring Boot Test, MockWebServer |
+| Runtime | Docker / Docker Compose |
 | CI | GitHub Actions |
+| Observability | Spring Boot Actuator |
 
-## 📁 Current Modules
+## Quick Start
 
-```text
-Spring-Cloud-Demo/
-├── discovery-service/      # Service registry
-├── application-server/     # Discoverable service instances
-├── application-client/     # Client consuming the service
-├── docker-compose.yml      # Reproducible local environment
-└── pom.xml                 # Maven multi-module build
-```
+### Prerequisites
 
-## 🚧 Modernization Roadmap
+- Java 17
+- Maven 3.9+
+- Docker Desktop / Docker Engine with Compose
 
-- [x] Document original architecture and intent
-- [x] Upgrade Java baseline to Java 17+
-- [x] Upgrade Spring Boot / Spring Cloud dependencies
-- [x] Remove legacy duplicate dependencies
-- [x] Replace IDE-specific run instructions with reproducible commands
-- [x] Add Docker Compose for the complete environment
-- [x] Add GitHub Actions CI
-- [ ] Add Spring Cloud Gateway
-- [ ] Add Resilience4j retry / circuit-breaker examples
-- [ ] Add Actuator health and metrics endpoints
-- [ ] Add integration tests
-- [ ] Add architecture and sequence diagrams
-- [ ] Add local observability with Prometheus / Grafana
-
-## 🧪 CI Pipeline
-
-Every push to `master` and every pull request targeting `master` runs the Maven verification pipeline.
-
-The workflow:
-
-1. Checks out the source
-2. Installs Java 17 using Eclipse Temurin
-3. Restores Maven dependencies from the GitHub Actions cache
-4. Runs `mvn clean verify`
-
-The Maven dependency cache is provided by `actions/setup-java`, which supports built-in Maven dependency caching. citeturn0search0turn0search5
-
-## ▶️ Local Development
+### Build and test
 
 ```bash
-# Clone
-git clone https://github.com/syedjafar01/Spring-Cloud-Demo.git
-cd Spring-Cloud-Demo
-
-# Build
 mvn clean verify
-
-# Start the complete environment
-docker compose up --build
 ```
 
-## 📚 Engineering Topics Demonstrated
+The verification suite includes unit/integration tests for service communication, load balancing, and resilience behavior.
 
-This project is intentionally focused on **why** distributed systems need these patterns rather than simply showing annotations:
+### Start the complete environment
 
-- How service discovery decouples service locations from clients
-- How multiple service instances improve availability and capacity
-- Where client-side versus gateway-side load balancing belongs
-- How retries can amplify failures when used incorrectly
-- When circuit breakers are useful
-- How health checks differ from business-level readiness
-- How observability helps diagnose distributed requests
-- How CI prevents dependency or compilation regressions from reaching the main branch
+```bash
+docker compose up --build -d
+```
 
-## 🔭 Future Direction
+Check the containers:
 
-The next version will evolve this repository from a historical Spring Cloud demo into a compact **microservices reference architecture** suitable for experimenting with system-design patterns, resilience, observability, and cloud-native deployment.
+```bash
+docker compose ps
+```
 
----
+### Verify Eureka
 
-### Author
+Open:
 
-**Syed Jafar** — Software Development Engineer II
+```text
+http://localhost:8761
+```
 
-[GitHub](https://github.com/syedjafar01)
+### Verify the service instances directly
+
+```bash
+curl http://localhost:8081/
+curl http://localhost:8082/
+```
+
+Expected responses:
+
+```text
+Hello from instance-1
+Hello from instance-2
+```
+
+### Verify Gateway load balancing
+
+```bash
+curl http://localhost:8080/service
+```
+
+Run it several times and you should see responses from both service instances:
+
+```text
+Hello from instance-1
+Hello from instance-2
+Hello from instance-1
+...
+```
+
+The sequence is not required to alternate perfectly; both registered instances should receive traffic.
+
+### Verify consumer-service
+
+```bash
+curl http://localhost:8083/
+```
+
+This exercises service-to-service discovery from `consumer-service` to `greeting-service`.
+
+## Resilience Demonstration
+
+The consumer service uses Resilience4j Retry and Circuit Breaker around the downstream greeting-service call.
+
+A failure follows this path:
+
+```text
+             downstream failure
+                     │
+                     ▼
+                   Retry
+                     │
+                     ▼
+              Circuit Breaker
+                     │
+                     ▼
+                  Fallback
+                     │
+                     ▼
+        Service temporarily unavailable
+```
+
+To reproduce the failure scenario with Docker:
+
+```bash
+docker compose stop greeting-service-1 greeting-service-2
+curl http://localhost:8080/service
+```
+
+Expected fallback:
+
+```text
+Service temporarily unavailable
+```
+
+Restart the services with:
+
+```bash
+docker compose start greeting-service-1 greeting-service-2
+```
+
+## Automated Tests
+
+The project contains tests for the important distributed-system behaviors.
+
+### Load balancing
+
+`LoadBalancingIntegrationTest` registers two test service instances and verifies that calls reach both instances.
+
+### Resilience
+
+`ResilienceIntegrationTest` uses a controlled failing downstream service to verify:
+
+1. downstream `503` responses are retried;
+2. the circuit breaker opens after the configured failure threshold;
+3. the fallback response is returned;
+4. subsequent calls are rejected by the open circuit without another downstream request.
+
+This keeps the resilience behavior testable without requiring Docker or a real Eureka server during the Maven test run.
+
+## CI/CD
+
+GitHub Actions runs on pushes to `master` and pull requests targeting `master`.
+
+The current quality gate is:
+
+```text
+Checkout
+   ↓
+Java 17 / Temurin
+   ↓
+Maven dependency cache
+   ↓
+mvn clean verify
+   ↓
+Unit + integration + resilience tests
+```
+
+A change is not considered healthy unless the Maven verification suite passes.
+
+## Engineering Patterns Demonstrated
+
+This project intentionally focuses on practical distributed-system concerns:
+
+- Why service discovery decouples consumers from instance locations
+- Why multiple instances improve availability and capacity
+- Where gateway routing and client-side load balancing fit
+- Why retries need bounded attempts and appropriate retryable exceptions
+- How circuit breakers prevent repeatedly calling an unhealthy dependency
+- How fallbacks provide controlled degradation
+- How integration tests can validate distributed behavior without requiring a full environment
+- How containerization makes the complete topology reproducible
+- How CI catches compilation, dependency, and test regressions
+
+## Project Roadmap
+
+- [x] Modernize Java / Spring baseline
+- [x] Eureka service discovery
+- [x] Multiple service instances
+- [x] Client-side load balancing
+- [x] Spring Cloud Gateway
+- [x] Resilience4j retry and circuit breaker
+- [x] Fallback handling
+- [x] Integration and resilience tests
+- [x] Docker Compose environment
+- [x] GitHub Actions CI
+- [ ] Gateway integration tests
+- [ ] Distributed tracing
+- [ ] Prometheus / Grafana observability stack
+- [ ] Centralized structured logging
+- [ ] Architecture decision records
+- [ ] Kubernetes deployment examples
+
+## Useful Commands
+
+```bash
+# Build and test
+mvn clean verify
+
+# Start everything
+ docker compose up --build -d
+
+# Stop everything
+ docker compose down
+
+# View logs
+ docker compose logs -f gateway
+ docker compose logs -f consumer
+
+# Check running containers
+ docker compose ps
+```
+
+## Author
+
+**Syed Jafar** — Software Development Engineer
+
+- GitHub: https://github.com/syedjafar01
