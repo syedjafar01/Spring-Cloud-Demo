@@ -1,6 +1,7 @@
 package com.syed.controller;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
@@ -12,12 +13,13 @@ class CallingServiceTest {
 
     @Test
     void shouldReturnResponseFromDiscoveredService() {
-        RestClient restClient = RestClient.builder().build();
-        MockRestServiceServer server = MockRestServiceServer.bindTo(restClient).build();
+        RestClient.Builder restClientBuilder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+        RestClient restClient = restClientBuilder.build();
         CallingService callingService = new CallingService(restClient);
 
         server.expect(requestTo("http://service/"))
-                .andRespond(withSuccess("Hello from test-instance", org.springframework.http.MediaType.TEXT_PLAIN));
+                .andRespond(withSuccess("Hello from test-instance", MediaType.TEXT_PLAIN));
 
         String response = callingService.callService();
 
