@@ -11,8 +11,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>application-client</artifactId>
-    <name>application-client</name>
+    <artifactId>consumer-service</artifactId>
+    <name>consumer-service</name>
 
     <dependencies>
         <dependency>
