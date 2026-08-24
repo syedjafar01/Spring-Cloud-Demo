@@ -1,26 +1,27 @@
 package com.syed.controller;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 class CallingServiceTest {
 
     @Test
     void shouldReturnResponseFromDiscoveredService() {
-        RestClient restClient = mock(RestClient.class, RETURNS_DEEP_STUBS);
-        when(restClient.get()
-                .uri("http://service/")
-                .retrieve()
-                .body(String.class))
-                .thenReturn("Hello from instance-1");
+        RestClient restClient = RestClient.builder().build();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restClient).build();
+        CallingService callingService = new CallingService(restClient);
 
-        CallingService service = new CallingService(restClient);
+        server.expect(requestTo("http://service/"))
+                .andRespond(withSuccess("Hello from test-instance", org.springframework.http.MediaType.TEXT_PLAIN));
 
-        assertThat(service.callService()).isEqualTo("Hello from instance-1");
+        String response = callingService.callService();
+
+        assertThat(response).isEqualTo("Hello from test-instance");
+        server.verify();
     }
 }
