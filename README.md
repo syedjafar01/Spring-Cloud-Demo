@@ -6,7 +6,7 @@
 [![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-Cloud--Native-6DB33F?style=flat-square&logo=spring&logoColor=white)](https://spring.io/projects/spring-cloud)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 
-A hands-on Spring Cloud reference architecture demonstrating **service discovery, API gateway routing, client-side load balancing, resilient service-to-service communication, integration testing, containerized development, metrics, and distributed tracing**.
+A hands-on Spring Cloud reference architecture demonstrating **service discovery, API gateway routing, client-side load balancing, resilient service-to-service communication, integration testing, containerized development, metrics, distributed tracing, centralized logging, and trace-to-log correlation**.
 
 ## Architecture
 
@@ -42,11 +42,14 @@ A hands-on Spring Cloud reference architecture demonstrating **service discovery
                               │     :8083      │
                               └────────────────┘
 
-                 ┌──────────────────────────────┐
-                 │ Prometheus :9090             │
-                 │ Grafana :3000                │
-                 │ Tempo :3200 / OTLP :4318     │
-                 └──────────────────────────────┘
+       ┌─────────────────────────────────────────────────────┐
+       │ Observability                                       │
+       │ Prometheus :9090  → Metrics                         │
+       │ Tempo :3200       → Traces                          │
+       │ Loki :3100        → Logs                            │
+       │ Alloy :12345      → Docker log collection           │
+       │ Grafana :3000     → Metrics + Traces + Logs         │
+       └─────────────────────────────────────────────────────┘
 ```
 
 ## Modules
@@ -58,8 +61,10 @@ A hands-on Spring Cloud reference architecture demonstrating **service discovery
 | `greeting-service` | 8081 / 8082 | Discoverable service with multiple instances |
 | `consumer-service` | 8083 | Service-to-service client with resilience policies |
 | Prometheus | 9090 | Metrics collection and querying |
-| Grafana | 3000 | Metrics and trace visualization |
+| Grafana | 3000 | Metrics, traces, and logs visualization |
 | Tempo | 3200 / 4317 / 4318 | Distributed trace storage and OTLP ingestion |
+| Loki | 3100 | Centralized log storage and querying |
+| Alloy | 12345 | Docker log collection and forwarding to Loki |
 
 ## Key capabilities
 
@@ -72,8 +77,11 @@ A hands-on Spring Cloud reference architecture demonstrating **service discovery
 - **Fallback** when the downstream service is unavailable
 - **Actuator** health and operational endpoints
 - **Micrometer / Prometheus metrics** from gateway, consumer, and greeting services
-- **Grafana** provisioned with Prometheus and Tempo datasources
+- **Grafana** provisioned with Prometheus, Tempo, and Loki datasources
 - **OpenTelemetry distributed tracing** exported over OTLP to Tempo
+- **Centralized Docker log collection** with Grafana Alloy and Loki
+- **Trace IDs in application logs** for cross-signal correlation
+- **Trace → logs and logs → trace navigation** in Grafana
 - **Integration tests** for load-balancing behavior
 - **Automated resilience tests** covering retry, circuit opening, and fallback
 - **Docker Compose** environment for reproducible local execution
@@ -93,7 +101,8 @@ A hands-on Spring Cloud reference architecture demonstrating **service discovery
 | Metrics | Micrometer + Prometheus |
 | Tracing | Micrometer Tracing + OpenTelemetry |
 | Trace backend | Grafana Tempo |
-| Dashboards | Grafana |
+| Logging | Logback + Grafana Alloy + Loki |
+| Visualization | Grafana |
 | Build | Maven |
 | Testing | JUnit 5, Spring Boot Test, MockWebServer |
 | Runtime | Docker / Docker Compose |
@@ -154,7 +163,28 @@ curl http://localhost:8083/
 
 ## Observability
 
-The application services expose Prometheus-compatible metrics through Spring Boot Actuator:
+The stack implements the three core observability signals:
+
+```text
+                    Microservices
+                         │
+          ┌──────────────┼──────────────┐
+          ▼              ▼              ▼
+       Metrics         Traces          Logs
+          │              │              │
+    Prometheus          Tempo           Loki
+          │              │              ▲
+          │              │              │
+          │          OpenTelemetry      │
+          │              │              │
+          └──────────────┼──────────────┘
+                         ▼
+                      Grafana
+```
+
+### Metrics
+
+Application services expose Prometheus-compatible metrics through Spring Boot Actuator:
 
 ```text
 http://localhost:8080/actuator/prometheus
@@ -163,37 +193,19 @@ http://localhost:8081/actuator/prometheus
 http://localhost:8082/actuator/prometheus
 ```
 
-Prometheus scrapes the application instances using the Docker service names configured in:
-
-```text
-observability/prometheus/prometheus.yml
-```
-
-Open Prometheus:
+Prometheus:
 
 ```text
 http://localhost:9090
 ```
 
-Open Grafana:
+Grafana:
 
 ```text
 http://localhost:3000
 ```
 
-Grafana is automatically provisioned with both Prometheus and Tempo datasources. The metrics pipeline is:
-
-```text
-Spring Boot
-    ↓
-Micrometer
-    ↓
-Actuator /actuator/prometheus
-    ↓
-Prometheus
-    ↓
-Grafana
-```
+### Traces
 
 The tracing pipeline is:
 
@@ -213,31 +225,60 @@ Tempo
 Grafana Explore
 ```
 
-Tracing is sampled at 100% for this local demonstration. Spring Boot supports configurable sampling through `management.tracing.sampling.probability`; the default in production-oriented applications is intentionally lower to control trace volume. citeturn0search7turn0search0
+Tempo receives OTLP over HTTP on `4318` and gRPC on `4317` and exposes its query API on `3200`.
 
-Useful first metric queries in Prometheus/Grafana include:
-
-```text
-http_server_requests_seconds_count
-http_server_requests_seconds_bucket
-jvm_memory_used_bytes
-process_cpu_usage
-system_cpu_usage
-```
-
-## Distributed Tracing Demonstration
-
-Generate a request through the Gateway:
+Generate traces:
 
 ```bash
-curl http://localhost:8080/service
+for i in {1..20}; do
+  curl -s http://localhost:8080/service
+  echo
+done
 ```
 
-Then open Grafana and go to **Explore → Tempo → Search**.
+Then open **Grafana → Explore → Tempo → Search**.
 
-A successful request should produce a trace containing spans for the HTTP request path, allowing you to inspect service boundaries and latency across the distributed request.
+### Logs
 
-The trace backend is Grafana Tempo, receiving OTLP over HTTP on port `4318` and exposing its query API on port `3200`. Tempo's OTLP receiver supports both gRPC (`4317`) and HTTP (`4318`) transports. citeturn0search2turn0search3
+Grafana Alloy discovers Docker containers through the Docker socket, collects their stdout/stderr logs, adds a low-cardinality `service_name` label, and forwards them to Loki.
+
+```text
+Docker containers
+       ↓
+Grafana Alloy
+       ↓
+Loki :3100
+       ↓
+Grafana
+```
+
+Loki:
+
+```text
+http://localhost:3100/ready
+```
+
+Alloy UI:
+
+```text
+http://localhost:12345
+```
+
+Application logs include the active trace and span IDs using the Spring Boot logging correlation MDC:
+
+```text
+[trace_id=4f3a... ,span_id=8b21...] request completed
+```
+
+This lets a trace in Tempo be correlated with the corresponding log entries in Loki.
+
+### Trace-to-log correlation
+
+Grafana provisions the Tempo and Loki datasource relationship automatically.
+
+From a Tempo span, use **Logs for this span** to open matching Loki logs. From a Loki log containing `trace_id=...`, use the **View Trace** derived field to navigate back to Tempo.
+
+The Loki stream selector uses `service_name` as the low-cardinality service label; trace IDs are kept in the log content rather than promoted to Loki stream labels.
 
 ## Load Balancing Demonstration
 
@@ -342,6 +383,9 @@ gateway-service
 - Integration testing without requiring a full Docker environment
 - Metrics collection and visualization for distributed services
 - Distributed tracing across service boundaries
+- Centralized log collection with low-cardinality Loki labels
+- Trace ID propagation into application logs
+- Trace-to-log and log-to-trace correlation
 - Reproducible local infrastructure with Docker Compose
 - CI quality gates for builds, tests, and container images
 
@@ -360,8 +404,10 @@ gateway-service
 - [x] Grafana metrics visualization
 - [x] OpenTelemetry distributed tracing
 - [x] Grafana Tempo trace backend
+- [x] Loki centralized logging
+- [x] Grafana Alloy Docker log collection
+- [x] Trace-to-log correlation
 - [ ] Gateway integration tests
-- [ ] Centralized structured logging
 - [ ] Architecture decision records
 - [ ] Kubernetes deployment examples
 
@@ -374,6 +420,8 @@ docker compose down
 docker compose logs -f gateway
 docker compose logs -f consumer
 docker compose logs -f tempo
+docker compose logs -f loki
+docker compose logs -f alloy
 docker compose ps
 ```
 
