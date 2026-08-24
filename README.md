@@ -6,7 +6,7 @@
 [![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-Cloud--Native-6DB33F?style=flat-square&logo=spring&logoColor=white)](https://spring.io/projects/spring-cloud)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 
-A hands-on Spring Cloud reference architecture demonstrating **service discovery, API gateway routing, client-side load balancing, resilient service-to-service communication, integration testing, containerized development, and metrics-driven observability**.
+A hands-on Spring Cloud reference architecture demonstrating **service discovery, API gateway routing, client-side load balancing, resilient service-to-service communication, integration testing, containerized development, metrics, and distributed tracing**.
 
 ## Architecture
 
@@ -43,8 +43,9 @@ A hands-on Spring Cloud reference architecture demonstrating **service discovery
                               └────────────────┘
 
                  ┌──────────────────────────────┐
-                 │ Prometheus :9090 → Grafana   │
-                 │            :3000             │
+                 │ Prometheus :9090             │
+                 │ Grafana :3000                │
+                 │ Tempo :3200 / OTLP :4318     │
                  └──────────────────────────────┘
 ```
 
@@ -57,7 +58,8 @@ A hands-on Spring Cloud reference architecture demonstrating **service discovery
 | `greeting-service` | 8081 / 8082 | Discoverable service with multiple instances |
 | `consumer-service` | 8083 | Service-to-service client with resilience policies |
 | Prometheus | 9090 | Metrics collection and querying |
-| Grafana | 3000 | Metrics visualization |
+| Grafana | 3000 | Metrics and trace visualization |
+| Tempo | 3200 / 4317 / 4318 | Distributed trace storage and OTLP ingestion |
 
 ## Key capabilities
 
@@ -70,7 +72,8 @@ A hands-on Spring Cloud reference architecture demonstrating **service discovery
 - **Fallback** when the downstream service is unavailable
 - **Actuator** health and operational endpoints
 - **Micrometer / Prometheus metrics** from gateway, consumer, and greeting services
-- **Grafana** provisioned with Prometheus as its default datasource
+- **Grafana** provisioned with Prometheus and Tempo datasources
+- **OpenTelemetry distributed tracing** exported over OTLP to Tempo
 - **Integration tests** for load-balancing behavior
 - **Automated resilience tests** covering retry, circuit opening, and fallback
 - **Docker Compose** environment for reproducible local execution
@@ -88,6 +91,8 @@ A hands-on Spring Cloud reference architecture demonstrating **service discovery
 | Load balancing | Spring Cloud LoadBalancer |
 | Resilience | Resilience4j |
 | Metrics | Micrometer + Prometheus |
+| Tracing | Micrometer Tracing + OpenTelemetry |
+| Trace backend | Grafana Tempo |
 | Dashboards | Grafana |
 | Build | Maven |
 | Testing | JUnit 5, Spring Boot Test, MockWebServer |
@@ -158,7 +163,7 @@ http://localhost:8081/actuator/prometheus
 http://localhost:8082/actuator/prometheus
 ```
 
-Prometheus scrapes all four application instances using the Docker service names configured in:
+Prometheus scrapes the application instances using the Docker service names configured in:
 
 ```text
 observability/prometheus/prometheus.yml
@@ -176,7 +181,7 @@ Open Grafana:
 http://localhost:3000
 ```
 
-Grafana is automatically provisioned with Prometheus as its default datasource. This gives the project a real metrics pipeline:
+Grafana is automatically provisioned with both Prometheus and Tempo datasources. The metrics pipeline is:
 
 ```text
 Spring Boot
@@ -190,14 +195,49 @@ Prometheus
 Grafana
 ```
 
-Useful first queries in Prometheus/Grafana include:
+The tracing pipeline is:
+
+```text
+HTTP request
+    ↓
+gateway-service
+    ↓
+consumer-service / greeting-service
+    ↓
+Micrometer Tracing
+    ↓
+OpenTelemetry OTLP
+    ↓
+Tempo
+    ↓
+Grafana Explore
+```
+
+Tracing is sampled at 100% for this local demonstration. Spring Boot supports configurable sampling through `management.tracing.sampling.probability`; the default in production-oriented applications is intentionally lower to control trace volume. citeturn0search7turn0search0
+
+Useful first metric queries in Prometheus/Grafana include:
 
 ```text
 http_server_requests_seconds_count
+http_server_requests_seconds_bucket
 jvm_memory_used_bytes
 process_cpu_usage
 system_cpu_usage
 ```
+
+## Distributed Tracing Demonstration
+
+Generate a request through the Gateway:
+
+```bash
+curl http://localhost:8080/service
+```
+
+Then open Grafana and go to **Explore → Tempo → Search**.
+
+A successful request should produce a trace containing spans for the HTTP request path, allowing you to inspect service boundaries and latency across the distributed request.
+
+The trace backend is Grafana Tempo, receiving OTLP over HTTP on port `4318` and exposing its query API on port `3200`. Tempo's OTLP receiver supports both gRPC (`4317`) and HTTP (`4318`) transports. citeturn0search2turn0search3
 
 ## Load Balancing Demonstration
 
@@ -301,6 +341,7 @@ gateway-service
 - Fallback behavior for unavailable dependencies
 - Integration testing without requiring a full Docker environment
 - Metrics collection and visualization for distributed services
+- Distributed tracing across service boundaries
 - Reproducible local infrastructure with Docker Compose
 - CI quality gates for builds, tests, and container images
 
@@ -316,9 +357,10 @@ gateway-service
 - [x] Docker Compose environment
 - [x] GitHub Actions CI
 - [x] Prometheus metrics
-- [x] Grafana metrics visualization foundation
+- [x] Grafana metrics visualization
+- [x] OpenTelemetry distributed tracing
+- [x] Grafana Tempo trace backend
 - [ ] Gateway integration tests
-- [ ] Distributed tracing with OpenTelemetry
 - [ ] Centralized structured logging
 - [ ] Architecture decision records
 - [ ] Kubernetes deployment examples
@@ -331,6 +373,7 @@ docker compose up --build -d
 docker compose down
 docker compose logs -f gateway
 docker compose logs -f consumer
+docker compose logs -f tempo
 docker compose ps
 ```
 
