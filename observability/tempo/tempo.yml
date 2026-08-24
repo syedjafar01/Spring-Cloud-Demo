@@ -1,5 +1,7 @@
 stream_over_http_enabled: true
 
+target: all
+
 server:
   http_listen_port: 3200
 
@@ -20,6 +22,5 @@ storage:
     local:
       path: /var/tempo/blocks
 
-compactor:
-  compaction:
-    block_retention: 24h
+usage_report:
+  reporting_enabled: false
