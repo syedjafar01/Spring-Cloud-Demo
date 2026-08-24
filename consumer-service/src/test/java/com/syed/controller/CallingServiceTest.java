@@ -18,7 +18,7 @@ class CallingServiceTest {
         RestClient restClient = restClientBuilder.build();
         CallingService callingService = new CallingService(restClient);
 
-        server.expect(requestTo("http://service/"))
+        server.expect(requestTo("http://greeting-service/"))
                 .andRespond(withSuccess("Hello from test-instance", MediaType.TEXT_PLAIN));
 
         String response = callingService.callService();
