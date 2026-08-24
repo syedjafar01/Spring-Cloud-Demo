@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: gateway-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["gateway:8080"]
+
+  - job_name: consumer-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["consumer:8083"]
+
+  - job_name: greeting-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - "greeting-service-1:8081"
+          - "greeting-service-2:8082"
