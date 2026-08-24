@@ -9,7 +9,7 @@ import org.springframework.web.client.RestClient;
 @RestController
 public class CallingService {
 
-    private static final String SERVICE_NAME = "service";
+    private static final String SERVICE_NAME = "greeting-service";
     private static final String FALLBACK_RESPONSE = "Service temporarily unavailable";
 
     private final RestClient restClient;
@@ -23,7 +23,7 @@ public class CallingService {
     @CircuitBreaker(name = SERVICE_NAME, fallbackMethod = "serviceFallback")
     public String callService() {
         return restClient.get()
-                .uri("http://service/")
+                .uri("http://greeting-service/")
                 .retrieve()
                 .body(String.class);
     }
