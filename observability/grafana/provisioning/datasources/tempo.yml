@@ -10,10 +10,10 @@ datasources:
     jsonData:
       httpMethod: GET
       tracesToLogsV2:
-        datasourceUid: Prometheus
+        datasourceUid: prometheus
         spanStartTimeShift: "-5m"
         spanEndTimeShift: "5m"
       tracesToMetrics:
-        datasourceUid: Prometheus
+        datasourceUid: prometheus
       serviceMap:
-        datasourceUid: Prometheus
+        datasourceUid: prometheus
