@@ -14,7 +14,7 @@
     <version>2.0.0</version>
     <packaging>pom</packaging>
     <name>spring-cloud-microservices-reference</name>
-    <description>Modern Spring Cloud reference architecture with Eureka service discovery, Gateway, load balancing, and resilience</description>
+    <description>Modern Spring Cloud reference architecture with Eureka service discovery, Gateway, load balancing, resilience, and observability</description>
     <properties>
         <java.version>17</java.version>
         <spring-cloud.version>2025.0.3</spring-cloud.version>
@@ -30,6 +30,12 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+    </dependencies>
     <modules>
         <module>discovery-service</module>
         <module>greeting-service</module>
