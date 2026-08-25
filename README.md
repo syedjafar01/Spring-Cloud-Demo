@@ -425,6 +425,20 @@ docker compose logs -f alloy
 docker compose ps
 ```
 
+## Observability Demo
+### Eureka Service Registry
+![EurekaServiceRegistry.png](docs/img/EurekaServiceRegistry.png)
+
+### Microservices Logs via Loki
+![ServiceLogs.png](docs/img/ServiceLogs.png)
+
+### Tracing via Tempo
+![Tempo trace.png](docs/img/Tempo%20trace.png)
+
+### Resilience4j Circuit Breaker State Transitions
+The circuit automatically transitions from CLOSED → OPEN → HALF_OPEN → CLOSED as downstream failures occur and the recovery window is reached.
+![Resilience4j.png](docs/img/Resilience4j.png)
+
 ## Author
 
 **Syed Jafar** — Software Development Engineer

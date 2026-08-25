@@ -5,7 +5,7 @@
 This project is a reference implementation of a small Spring Cloud microservices platform. It intentionally keeps the business domain simple so the infrastructure and distributed-system behavior are easy to observe.
 
 ```text
-                         External Client
+                       External Client
                               │
                               ▼
                      ┌─────────────────┐
@@ -30,11 +30,11 @@ This project is a reference implementation of a small Spring Cloud microservices
                             :8083
 
           ┌────────────────────────────────────────┐
-          │              Observability              │
+          │              Observability             │
           │ Prometheus → Metrics                   │
           │ Tempo      → Traces                    │
-          │ Loki      ← Logs ← Alloy               │
-          │ Grafana   → Visualization              │
+          │ Loki       ← Logs ← Alloy              │
+          │ Grafana    → Visualization             │
           └────────────────────────────────────────┘
 ```
 
@@ -77,7 +77,7 @@ greeting-service
 ```text
 consumer-service :8083
           ↓
-  logical service name
+logical service name
           ↓
 Spring Cloud LoadBalancer
           ↓
@@ -88,12 +88,12 @@ greeting-service
 
 ```text
 greeting-service unavailable
-          ↓
-       Retry
-          ↓
-   Circuit Breaker
-          ↓
-       Fallback
+              ↓
+           Retry
+              ↓
+       Circuit Breaker
+              ↓
+           Fallback
 ```
 
 ## Why the architecture is intentionally small
