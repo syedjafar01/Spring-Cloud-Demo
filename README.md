@@ -1,11 +1,5 @@
 # Spring Cloud Microservices Reference
 
-[![CI](https://github.com/syedjafar01/Spring-Cloud-Microservices-Reference/actions/workflows/ci.yml/badge.svg)](https://github.com/syedjafar01/Spring-Cloud-Microservices-Reference/actions/workflows/ci.yml)
-[![Java 17](https://img.shields.io/badge/Java-17-ED8B00?style=flat-square&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
-[![Spring Boot 3](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=flat-square&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-Cloud--Native-6DB33F?style=flat-square&logo=spring&logoColor=white)](https://spring.io/projects/spring-cloud)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
-
 A hands-on Spring Cloud reference architecture demonstrating **service discovery, API gateway routing, client-side load balancing, resilient service-to-service communication, integration testing, containerized development, metrics, distributed tracing, centralized logging, and trace-to-log correlation**.
 
 > **Goal:** provide a small but production-oriented microservices playground where distributed-system patterns can be built, tested, observed, and demonstrated locally.
@@ -13,67 +7,29 @@ A hands-on Spring Cloud reference architecture demonstrating **service discovery
 ## Architecture
 
 ```text
-                              ┌──────────────────┐
-                              │ External Client  │
-                              └────────┬─────────┘
-                                       │
-                                       ▼
-                              ┌──────────────────┐
-                              │ gateway-service  │
-                              │      :8080       │
-                              └────────┬─────────┘
-                                       │
-                                       ▼
-                              ┌──────────────────┐
-                              │ consumer-service │
-                              │      :8083       │
-                              └────────┬─────────┘
-                                       │
-                         service discovery / load balancing
-                                       │
-                         ┌─────────────┴─────────────┐
-                         ▼                           ▼
-                ┌──────────────────┐       ┌──────────────────┐
-                │ greeting-service │       │ greeting-service │
-                │    instance-1    │       │    instance-2    │
-                │      :8081       │       │      :8082       │
-                └──────────────────┘       └──────────────────┘
-                         ▲                           ▲
-                         └─────────────┬─────────────┘
-                                       │
-                              ┌────────┴────────┐
-                              │ discovery-service│
-                              │      :8761       │
-                              │      Eureka      │
-                              └──────────────────┘
+External Client
+      │
+      ▼
+Gateway :8080
+      │
+      ▼
+Consumer :8083
+      │
+      ├── Retry
+      ├── Circuit Breaker
+      └── Load Balancer
+              │
+        ┌─────┴─────┐
+        ▼           ▼
+Greeting :8081  Greeting :8082
+        ▲           ▲
+        └─────┬─────┘
+              │
+        Eureka :8761
 
-       ┌─────────────────────────────────────────────────────┐
-       │ Observability                                       │
-       │ Prometheus :9090  → Metrics                         │
-       │ Tempo :3200       → Traces                          │
-       │ Loki :3100        → Logs                            │
-       │ Alloy :12345      → Docker log collection           │
-       │ Grafana :3000     → Metrics + Traces + Logs         │
-       └─────────────────────────────────────────────────────┘
-```
-
-### Request flow
-
-```text
-Client
-  │
-  ▼
-Gateway
-  │
-  ▼
-Consumer
-  │
-  ├── Retry
-  ├── Circuit Breaker
-  └── Load Balancer
-          │
-          ├── greeting-service:8081
-          └── greeting-service:8082
+Observability: Prometheus → Grafana ← Tempo / Loki
+                         ↑
+                       Alloy
 ```
 
 Eureka is used for service registration and discovery; it is not itself part of the synchronous request path.
@@ -86,10 +42,10 @@ Eureka is used for service registration and discovery; it is not itself part of 
 | `gateway-service` | 8080 | External API entry point and routing |
 | `greeting-service` | 8081 / 8082 | Discoverable service with multiple instances |
 | `consumer-service` | 8083 | Service-to-service client with resilience policies |
-| Prometheus | 9090 | Metrics collection and querying |
+| Prometheus | 9090 | Metrics collection |
 | Grafana | 3000 | Metrics, traces, and logs visualization |
 | Tempo | 3200 / 4317 / 4318 | Distributed trace storage and OTLP ingestion |
-| Loki | 3100 | Centralized log storage and querying |
+| Loki | 3100 | Centralized log storage |
 | Alloy | 12345 | Docker log collection and forwarding to Loki |
 
 ## Key capabilities
@@ -101,18 +57,14 @@ Eureka is used for service registration and discovery; it is not itself part of 
 - **Retry** for transient downstream failures
 - **Circuit breaker** with Resilience4j
 - **Fallback** when the downstream service is unavailable
-- **Actuator** health and operational endpoints
-- **Micrometer / Prometheus metrics** from gateway, consumer, and greeting services
-- **Grafana** provisioned with Prometheus, Tempo, and Loki datasources
-- **OpenTelemetry distributed tracing** exported over OTLP to Tempo
+- **Micrometer / Prometheus metrics**
+- **OpenTelemetry distributed tracing** exported to Tempo
 - **Centralized Docker log collection** with Grafana Alloy and Loki
 - **Trace IDs in application logs** for cross-signal correlation
 - **Trace → logs and logs → trace navigation** in Grafana
-- **Integration tests** for load-balancing behavior
-- **Gateway integration tests** for routing and downstream error propagation
-- **Automated resilience tests** covering retry, circuit opening, and fallback
-- **Docker Compose** environment for reproducible local execution
-- **GitHub Actions CI** running Maven verification and Docker image builds
+- **Load-balancing, resilience, and Gateway integration tests**
+- **Docker Compose** for reproducible local execution
+- **GitHub Actions CI** for Maven verification and Docker image builds
 
 ## Technology Stack
 
@@ -153,61 +105,19 @@ mvn clean verify
 
 ```bash
 docker compose up --build -d
-```
-
-Check the containers:
-
-```bash
 docker compose ps
 ```
 
 ### Verify the services
 
-Eureka:
-
-```text
-http://localhost:8761
-```
-
-Greeting instances:
-
 ```bash
 curl http://localhost:8081/
 curl http://localhost:8082/
-```
-
-Gateway:
-
-```bash
 curl http://localhost:8080/service
-```
-
-Consumer service:
-
-```bash
 curl http://localhost:8083/
 ```
 
 ## Observability
-
-The stack implements the three core observability signals:
-
-```text
-                    Microservices
-                         │
-          ┌──────────────┼──────────────┐
-          ▼              ▼              ▼
-       Metrics         Traces          Logs
-          │              │              │
-    Prometheus          Tempo           Loki
-          │              │              ▲
-          │              │              │
-          │          OpenTelemetry      │
-          │              │              │
-          └──────────────┼──────────────┘
-                         ▼
-                      Grafana
-```
 
 ### Metrics
 
@@ -220,21 +130,7 @@ http://localhost:8081/actuator/prometheus
 http://localhost:8082/actuator/prometheus
 ```
 
-Prometheus:
-
-```text
-http://localhost:9090
-```
-
-Grafana:
-
-```text
-http://localhost:3000
-```
-
 ### Traces
-
-The tracing pipeline is:
 
 ```text
 HTTP request
@@ -252,8 +148,6 @@ Tempo
 Grafana Explore
 ```
 
-Tempo receives OTLP over HTTP on `4318` and gRPC on `4317` and exposes its query API on `3200`.
-
 Generate traces:
 
 ```bash
@@ -263,11 +157,7 @@ for i in {1..20}; do
 done
 ```
 
-Then open **Grafana → Explore → Tempo → Search**.
-
 ### Logs
-
-Grafana Alloy discovers Docker containers through the Docker socket, collects their stdout/stderr logs, adds a low-cardinality `service_name` label, and forwards them to Loki.
 
 ```text
 Docker containers
@@ -279,37 +169,9 @@ Loki :3100
 Grafana
 ```
 
-Loki:
-
-```text
-http://localhost:3100/ready
-```
-
-Alloy UI:
-
-```text
-http://localhost:12345
-```
-
-Application logs include the active trace and span IDs using Spring Boot logging correlation MDC:
-
-```text
-[trace_id=4f3a... ,span_id=8b21...] request completed
-```
-
-This lets a trace in Tempo be correlated with the corresponding log entries in Loki.
-
-### Trace-to-log correlation
-
-Grafana provisions the Tempo and Loki datasource relationship automatically.
-
-From a Tempo span, use **Logs for this span** to open matching Loki logs. From a Loki log containing `trace_id=...`, use the **View Trace** derived field to navigate back to Tempo.
-
-The Loki stream selector uses `service_name` as the low-cardinality service label; trace IDs are kept in the log content rather than promoted to Loki stream labels.
+The Loki stream selector uses `service_name` as a low-cardinality service label; trace IDs remain in log content rather than becoming Loki stream labels.
 
 ## Load Balancing Demonstration
-
-Run the Gateway request several times:
 
 ```bash
 for i in {1..10}; do
@@ -318,7 +180,7 @@ for i in {1..10}; do
 done
 ```
 
-You should see responses from both greeting-service instances. The sequence does not need to alternate perfectly; the important behavior is that both registered instances can receive traffic.
+Both registered `greeting-service` instances can receive traffic. The sequence does not need to alternate perfectly.
 
 ## Resilience Demonstration
 
@@ -332,8 +194,6 @@ downstream failure
 Circuit Breaker
        ↓
     Fallback
-       ↓
-Service temporarily unavailable
 ```
 
 With both greeting instances stopped:
@@ -349,19 +209,7 @@ Expected fallback:
 Service temporarily unavailable
 ```
 
-The circuit breaker can be observed through Prometheus with:
-
-```promql
-resilience4j_circuitbreaker_state{name="greeting-service",state=~"closed|open|half_open"}
-```
-
-The expected lifecycle is:
-
-```text
-CLOSED → OPEN → HALF_OPEN → CLOSED
-```
-
-Restart the greeting instances with:
+Restart them with:
 
 ```bash
 docker compose start greeting-service-1 greeting-service-2
@@ -369,83 +217,41 @@ docker compose start greeting-service-1 greeting-service-2
 
 ## Automated Tests
 
-`LoadBalancingIntegrationTest` verifies that calls can reach two independently running test service instances.
+`LoadBalancingIntegrationTest` verifies calls can reach two independently running test service instances.
 
-`ResilienceIntegrationTest` verifies that:
+`ResilienceIntegrationTest` verifies retry, circuit opening, fallback, and subsequent short-circuiting while the circuit is open.
 
-1. downstream `503` responses are retried;
-2. the circuit breaker opens after the configured failure threshold;
-3. the fallback response is returned;
-4. subsequent calls do not reach the failed downstream service while the circuit is open.
+`GatewayIntegrationTest` runs the actual Gateway on a random port and uses an isolated `MockWebServer` as the discovered `greeting-service`. It verifies:
 
-`GatewayIntegrationTest` runs the actual Gateway on a random port and uses an isolated `MockWebServer` as the discovered `greeting-service` instance. It verifies that:
+1. `/service` is routed through `lb://greeting-service`;
+2. `StripPrefix=1` forwards to the downstream `/` endpoint while preserving the query string;
+3. downstream `503` responses are propagated.
 
-1. `/service` is routed through the configured `lb://greeting-service` route;
-2. `StripPrefix=1` forwards the request to the downstream `/` endpoint while preserving the query string;
-3. downstream `503` responses are propagated through the Gateway.
+The Gateway test disables Eureka and uses Spring Cloud's `SimpleDiscoveryClient`, so it does not require Docker or a running Eureka server.
 
-The Gateway test disables Eureka and uses Spring Cloud's `SimpleDiscoveryClient` for deterministic, isolated test discovery, so it does not require Docker or a running Eureka server.
+## Architecture Decision Records
 
-These tests run as part of:
+The repository documents the architectural reasoning behind the main design choices in [`docs/adr`](docs/adr/README.md).
 
-```bash
-mvn clean verify
-```
+| ADR | Decision |
+|---|---|
+| 001 | Eureka for service discovery |
+| 002 | Gateway as the external entry point |
+| 003 | Resilience4j for fault tolerance |
+| 004 | Tempo for distributed tracing |
+| 005 | Loki for centralized logging |
+| 006 | Isolated integration tests without infrastructure dependencies |
+| 007 | Keep trace IDs out of Loki stream labels |
+
+The ADRs capture context, alternatives, consequences, and validation rather than presenting technology choices as universally correct.
 
 ## CI/CD
 
-GitHub Actions runs on pushes to `master` and pull requests targeting `master`.
-
-```text
-                 GitHub Actions
-                       │
-          ┌────────────┴────────────┐
-          ▼                         ▼
-    Maven verify              Docker builds
-          │                         │
-   Java 17 + tests          4 service images
-          │                         │
-          └────────────┬────────────┘
-                       ▼
-                    Quality Gate
-```
-
-The Docker matrix validates:
-
-```text
-discovery-service
-greeting-service
-consumer-service
-gateway-service
-```
+GitHub Actions runs Maven verification on pushes and pull requests targeting `master`, followed by Docker image validation and Compose configuration validation.
 
 ## Observability Demo
 
-The screenshots below are captured from the running local environment and show the main operational signals and failure behavior.
-
-### 1. Eureka — Service Discovery
-
-Two `greeting-service` instances are registered with Eureka and available for client-side load balancing.
-
-![Eureka Service Registry](docs/img/EurekaServiceRegistry.png)
-
-### 2. Loki — Centralized Service Logs
-
-Application and infrastructure logs are collected centrally through Grafana Alloy and queried through Loki.
-
-![Service Logs via Loki](docs/img/ServiceLogs.png)
-
-### 3. Tempo — Distributed Trace
-
-A request can be followed across service boundaries, showing the gateway and downstream service spans in a single trace.
-
-![Distributed Trace via Tempo](docs/img/Tempo%20trace.png)
-
-### 4. Resilience4j — Circuit Breaker State Transitions
-
-The circuit breaker automatically transitions between `CLOSED`, `OPEN`, and `HALF_OPEN` as downstream failures and recovery probes occur.
-
-![Resilience4j Circuit Breaker State Transitions](docs/img/Resilience4j.png)
+The repository includes screenshots demonstrating Eureka service discovery, Loki centralized logs, Tempo distributed traces, and Resilience4j circuit-breaker state transitions.
 
 ## Engineering Patterns Demonstrated
 
@@ -457,9 +263,9 @@ The circuit breaker automatically transitions between `CLOSED`, `OPEN`, and `HAL
 - Fallback behavior for unavailable dependencies
 - Gateway integration testing with isolated downstream dependencies
 - Integration testing without requiring a full Docker environment
-- Metrics collection and visualization for distributed services
+- Metrics collection and visualization
 - Distributed tracing across service boundaries
-- Centralized log collection with low-cardinality Loki labels
+- Centralized logging with low-cardinality Loki labels
 - Trace ID propagation into application logs
 - Trace-to-log and log-to-trace correlation
 - Reproducible local infrastructure with Docker Compose
@@ -484,7 +290,7 @@ The circuit breaker automatically transitions between `CLOSED`, `OPEN`, and `HAL
 - [x] Loki centralized logging
 - [x] Grafana Alloy Docker log collection
 - [x] Trace-to-log correlation
-- [ ] Architecture decision records
+- [x] Architecture decision records
 - [ ] Kubernetes deployment examples
 
 ## Useful Commands
