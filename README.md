@@ -8,6 +8,8 @@
 
 A hands-on Spring Cloud reference architecture demonstrating **service discovery, API gateway routing, client-side load balancing, resilient service-to-service communication, integration testing, containerized development, metrics, distributed tracing, centralized logging, and trace-to-log correlation**.
 
+> **Goal:** provide a small but production-oriented microservices playground where distributed-system patterns can be built, tested, observed, and demonstrated locally.
+
 ## Architecture
 
 ```text
@@ -23,9 +25,11 @@ A hands-on Spring Cloud reference architecture demonstrating **service discovery
                                        │
                                        ▼
                               ┌──────────────────┐
-                              │discovery-service │
-                              │      :8761       │
+                              │ consumer-service │
+                              │      :8083       │
                               └────────┬─────────┘
+                                       │
+                         service discovery / load balancing
                                        │
                          ┌─────────────┴─────────────┐
                          ▼                           ▼
@@ -33,14 +37,15 @@ A hands-on Spring Cloud reference architecture demonstrating **service discovery
                 │ greeting-service │       │ greeting-service │
                 │    instance-1    │       │    instance-2    │
                 │      :8081       │       │      :8082       │
-                └─────────▲────────┘       └─────────▲────────┘
-                          │                           │
-                          └───────────┬───────────────┘
-                                      │
-                              ┌───────┴────────┐
-                              │consumer-service│
-                              │     :8083      │
-                              └────────────────┘
+                └──────────────────┘       └──────────────────┘
+                         ▲                           ▲
+                         └─────────────┬─────────────┘
+                                       │
+                              ┌────────┴────────┐
+                              │ discovery-service│
+                              │      :8761       │
+                              │      Eureka      │
+                              └──────────────────┘
 
        ┌─────────────────────────────────────────────────────┐
        │ Observability                                       │
@@ -51,6 +56,27 @@ A hands-on Spring Cloud reference architecture demonstrating **service discovery
        │ Grafana :3000     → Metrics + Traces + Logs         │
        └─────────────────────────────────────────────────────┘
 ```
+
+### Request flow
+
+```text
+Client
+  │
+  ▼
+Gateway
+  │
+  ▼
+Consumer
+  │
+  ├── Retry
+  ├── Circuit Breaker
+  └── Load Balancer
+          │
+          ├── greeting-service:8081
+          └── greeting-service:8082
+```
+
+Eureka is used for service registration and discovery; it is not itself part of the synchronous request path.
 
 ## Modules
 
@@ -264,7 +290,7 @@ Alloy UI:
 http://localhost:12345
 ```
 
-Application logs include the active trace and span IDs using the Spring Boot logging correlation MDC:
+Application logs include the active trace and span IDs using Spring Boot logging correlation MDC:
 
 ```text
 [trace_id=4f3a... ,span_id=8b21...] request completed
@@ -313,7 +339,7 @@ With both greeting instances stopped:
 
 ```bash
 docker compose stop greeting-service-1 greeting-service-2
-curl http://localhost:8080/service
+curl http://localhost:8083/
 ```
 
 Expected fallback:
@@ -322,7 +348,19 @@ Expected fallback:
 Service temporarily unavailable
 ```
 
-Restart them with:
+The circuit breaker can be observed through Prometheus with:
+
+```promql
+resilience4j_circuitbreaker_state{name="greeting-service",state=~"closed|open|half_open"}
+```
+
+The expected lifecycle is:
+
+```text
+CLOSED → OPEN → HALF_OPEN → CLOSED
+```
+
+Restart the greeting instances with:
 
 ```bash
 docker compose start greeting-service-1 greeting-service-2
@@ -372,6 +410,34 @@ consumer-service
 gateway-service
 ```
 
+## Observability Demo
+
+The screenshots below are captured from the running local environment and show the main operational signals and failure behavior.
+
+### 1. Eureka — Service Discovery
+
+Two `greeting-service` instances are registered with Eureka and available for client-side load balancing.
+
+![Eureka Service Registry](docs/img/EurekaServiceRegistry.png)
+
+### 2. Loki — Centralized Service Logs
+
+Application and infrastructure logs are collected centrally through Grafana Alloy and queried through Loki.
+
+![Service Logs via Loki](docs/img/ServiceLogs.png)
+
+### 3. Tempo — Distributed Trace
+
+A request can be followed across service boundaries, showing the gateway and downstream service spans in a single trace.
+
+![Distributed Trace via Tempo](docs/img/Tempo%20trace.png)
+
+### 4. Resilience4j — Circuit Breaker State Transitions
+
+The circuit breaker automatically transitions between `CLOSED`, `OPEN`, and `HALF_OPEN` as downstream failures and recovery probes occur.
+
+![Resilience4j Circuit Breaker State Transitions](docs/img/Resilience4j.png)
+
 ## Engineering Patterns Demonstrated
 
 - Service discovery decoupling consumers from instance locations
@@ -417,27 +483,13 @@ gateway-service
 mvn clean verify
 docker compose up --build -d
 docker compose down
-docker compose logs -f gateway
-docker compose logs -f consumer
+docker compose logs -f gateway-service
+docker compose logs -f consumer-service
 docker compose logs -f tempo
 docker compose logs -f loki
 docker compose logs -f alloy
 docker compose ps
 ```
-
-## Observability Demo
-### Eureka Service Registry
-![EurekaServiceRegistry.png](docs/img/EurekaServiceRegistry.png)
-
-### Microservices Logs via Loki
-![ServiceLogs.png](docs/img/ServiceLogs.png)
-
-### Tracing via Tempo
-![Tempo trace.png](docs/img/Tempo%20trace.png)
-
-### Resilience4j Circuit Breaker State Transitions
-The circuit automatically transitions from CLOSED → OPEN → HALF_OPEN → CLOSED as downstream failures occur and the recovery window is reached.
-![Resilience4j.png](docs/img/Resilience4j.png)
 
 ## Author
 
