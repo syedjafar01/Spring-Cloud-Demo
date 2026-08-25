@@ -109,6 +109,7 @@ Eureka is used for service registration and discovery; it is not itself part of 
 - **Trace IDs in application logs** for cross-signal correlation
 - **Trace → logs and logs → trace navigation** in Grafana
 - **Integration tests** for load-balancing behavior
+- **Gateway integration tests** for routing and downstream error propagation
 - **Automated resilience tests** covering retry, circuit opening, and fallback
 - **Docker Compose** environment for reproducible local execution
 - **GitHub Actions CI** running Maven verification and Docker image builds
@@ -377,6 +378,14 @@ docker compose start greeting-service-1 greeting-service-2
 3. the fallback response is returned;
 4. subsequent calls do not reach the failed downstream service while the circuit is open.
 
+`GatewayIntegrationTest` runs the actual Gateway on a random port and uses an isolated `MockWebServer` as the discovered `greeting-service` instance. It verifies that:
+
+1. `/service` is routed through the configured `lb://greeting-service` route;
+2. `StripPrefix=1` forwards the request to the downstream `/` endpoint while preserving the query string;
+3. downstream `503` responses are propagated through the Gateway.
+
+The Gateway test disables Eureka and uses Spring Cloud's `SimpleDiscoveryClient` for deterministic, isolated test discovery, so it does not require Docker or a running Eureka server.
+
 These tests run as part of:
 
 ```bash
@@ -446,6 +455,7 @@ The circuit breaker automatically transitions between `CLOSED`, `OPEN`, and `HAL
 - Bounded retries for transient failures
 - Circuit breakers for controlled degradation
 - Fallback behavior for unavailable dependencies
+- Gateway integration testing with isolated downstream dependencies
 - Integration testing without requiring a full Docker environment
 - Metrics collection and visualization for distributed services
 - Distributed tracing across service boundaries
@@ -464,6 +474,7 @@ The circuit breaker automatically transitions between `CLOSED`, `OPEN`, and `HAL
 - [x] Spring Cloud Gateway
 - [x] Resilience4j retry and circuit breaker
 - [x] Integration and resilience tests
+- [x] Gateway integration tests
 - [x] Docker Compose environment
 - [x] GitHub Actions CI
 - [x] Prometheus metrics
@@ -473,7 +484,6 @@ The circuit breaker automatically transitions between `CLOSED`, `OPEN`, and `HAL
 - [x] Loki centralized logging
 - [x] Grafana Alloy Docker log collection
 - [x] Trace-to-log correlation
-- [ ] Gateway integration tests
 - [ ] Architecture decision records
 - [ ] Kubernetes deployment examples
 
