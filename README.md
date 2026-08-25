@@ -251,7 +251,32 @@ GitHub Actions runs Maven verification on pushes and pull requests targeting `ma
 
 ## Observability Demo
 
-The repository includes screenshots demonstrating Eureka service discovery, Loki centralized logs, Tempo distributed traces, and Resilience4j circuit-breaker state transitions.
+The screenshots below are captured from the running local environment and show the main operational signals and failure behavior.
+
+### 1. Eureka — Service Discovery
+
+Two `greeting-service` instances are registered with Eureka and available for client-side load balancing.
+
+![Eureka Service Registry](docs/img/EurekaServiceRegistry.png)
+
+### 2. Loki — Centralized Service Logs
+
+Application and infrastructure logs are collected centrally through Grafana Alloy and queried through Loki.
+
+![Service Logs via Loki](docs/img/ServiceLogs.png)
+
+### 3. Tempo — Distributed Trace
+
+A request can be followed across service boundaries, showing the gateway and downstream service spans in a single trace.
+
+![Distributed Trace via Tempo](docs/img/Tempo%20trace.png)
+
+### 4. Resilience4j — Circuit Breaker State Transitions
+
+The circuit breaker automatically transitions between `CLOSED`, `OPEN`, and `HALF_OPEN` as downstream failures and recovery probes occur.
+
+![Resilience4j Circuit Breaker State Transitions](docs/img/Resilience4j.png)
+
 
 ## Engineering Patterns Demonstrated
 
